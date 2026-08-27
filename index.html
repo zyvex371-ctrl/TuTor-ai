@@ -177,7 +177,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             fecharMenu();
         }
 
-        // FUNÇÃO DE COMPRESSÃO E REDIMENSIONAMENTO AUTOMÁTICO DE IMAGEM
         function comprimirImagem(file, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -187,8 +186,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     let largura = img.width;
                     let altura = img.height;
                     
-                    // Reduz para no máximo 1024px mantendo a proporção para ficar leve
-                    const maxDim = 1024;
+                    const maxDim = 800; // Otimizado para economizar tokens
                     if (largura > altura && largura > maxDim) {
                         altura = Math.round((altura * maxDim) / largura);
                         largura = maxDim;
@@ -202,8 +200,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, largura, altura);
                     
-                    // Comprime para JPEG com qualidade 0.75 (leve e nítido)
-                    const dataUrlComprimida = canvas.toDataURL('image/jpeg', 0.75);
+                    const dataUrlComprimida = canvas.toDataURL('image/jpeg', 0.7);
                     callback(dataUrlComprimida);
                 };
                 img.src = e.target.result;
@@ -347,18 +344,21 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 conteudoMensagem.push({ type: "image_url", image_url: { url: img } });
             });
 
+            // Envia apenas as últimas 2 mensagens do histórico para economizar tokens e evitar estouro de cota
+            let historicoRecente = sessao.mensagens.slice(-3, -1).map(m => ({
+                role: m.classe === "user-message" ? "user" : "assistant",
+                content: m.texto
+            }));
+
             let corpoRequisicao = {
                 model: "openai/gpt-4o-mini",
                 messages: [
                     { role: "system", content: systemPromptTutor },
-                    ...sessao.mensagens.slice(-6).map(m => ({
-                        role: m.classe === "user-message" ? "user" : "assistant",
-                        content: m.texto
-                    })),
+                    ...historicoRecente,
                     { role: "user", content: conteudoMensagem }
                 ],
                 temperature: 0.5,
-                max_tokens: 1200
+                max_tokens: 500 // Limite otimizado para evitar estouro de créditos
             };
 
             try {
@@ -385,15 +385,15 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     renderizarMensagem(textoIA, "ai-message", null);
 
                 } else if (dados.error) {
-                    renderizarMensagem("coloque imagens separadas para funcionar nao tudo junto⚠️<br><br><small style='color: #fca5a5;'>Detalhe: " + dados.error.message + "</small>", "error-message", null);
+                    renderizarMensagem("⚠️ O limite de uso gratuito foi atingido momentaneamente. Clique em '+ Nova Dúvida' no menu lateral para limpar o histórico e continuar!", "error-message", null);
                 } else {
-                    renderizarMensagem("coloque imagens separadas para funcionar nao tudo junto⚠️", "error-message", null);
+                    renderizarMensagem("⚠️ Erro ao processar. Tente novamente.", "error-message", null);
                 }
 
             } catch (erro) {
                 const loadEl = document.getElementById(loadingId);
                 if (loadEl) loadEl.remove();
-                renderizarMensagem("coloque imagens separadas para funcionar nao tudo junto⚠️", "error-message", null);
+                renderizarMensagem("⚠️ Erro de conexão.", "error-message", null);
             }
         }
 
@@ -410,7 +410,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 conteudoHTML += `</div>`;
             }
 
-            if (classe === "ai-message" && !texto.startsWith("coloque imagens") && typeof marked !== "undefined") {
+            if (classe === "ai-message" && !texto.startsWith("⚠️") && typeof marked !== "undefined") {
                 conteudoHTML += marked.parse(texto);
             } else {
                 conteudoHTML += texto;
@@ -418,7 +418,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
 
             div.innerHTML = conteudoHTML;
 
-            if (classe === "ai-message" && !texto.startsWith("coloque imagens")) {
+            if (classe === "ai-message" && !texto.startsWith("⚠️")) {
                 const acoesDiv = document.createElement("div");
                 acoesDiv.className = "msg-actions";
 
