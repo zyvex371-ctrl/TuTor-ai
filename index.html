@@ -19,9 +19,8 @@
         .message { max-width: 88%; padding: 14px 16px; border-radius: 12px; line-height: 1.5; font-size: 14px; word-break: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; }
         .user-message { background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .ai-message { background: #1e293b; color: #f1f5f9; align-self: flex-start; border: 1px solid #334155; border-bottom-left-radius: 2px; }
-        .error-message { background: #450a0a; color: #fca5a5; align-self: center; border: 1px solid #7f1d1d; text-align: center; }
+        .error-message { background: #450a0a; color: #fca5a5; align-self: center; border: 1px solid #7f1d1d; text-align: center; font-weight: 500; }
 
-        /* PREVIEW DAS FOTOS MÚLTIPLAS ANTES DE ENVIAR */
         .preview-bar { display: flex; gap: 8px; padding: 8px 12px; background: #0f172a; border-top: 1px solid #334155; overflow-x: auto; flex-shrink: 0; min-height: 0; }
         .preview-bar:empty { display: none; }
         .preview-thumb { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #38bdf8; flex-shrink: 0; }
@@ -107,12 +106,12 @@
         const userInput = document.getElementById("user-input");
         const previewBar = document.getElementById("previewBar");
         
-        let imagensBase64Atuais = []; // Array para armazenar até 6 fotos
+        let imagensBase64Atuais = [];
 
         const systemPromptTutor = `Você é a TuTor-ai, uma professora particular inteligente, paciente e socrática. 
 REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objetivo é fazê-lo pensar e guiar o raciocínio dele passo a passo.
 - Se o aluno mandar fotos ou exercícios, analise-os, diga do que se trata e faça uma pergunta instigante para começar a resolver juntos.
-- Se o aluno errar uma conta (ex: 7 x 8 = 54), explique carinhosamente o erro passo a passo.
+- Se o aluno errar uma conta, explique carinhosamente o erro passo a passo.
 - Seja encorajadora e use explicações claras e didáticas.`;
 
         let sessoes = [];
@@ -182,7 +181,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
 
-            // Limita a um total de 6 fotos
             const vagasRestantes = 6 - imagensBase64Atuais.length;
             if (vagasRestantes <= 0) {
                 alert("⚠️ Você já selecionou o limite máximo de 6 fotos.");
@@ -200,7 +198,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 reader.readAsDataURL(file);
             });
 
-            // Reseta o input para permitir selecionar a mesma foto se precisar
             event.target.value = '';
         }
 
@@ -330,7 +327,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     { role: "user", content: conteudoMensagem }
                 ],
                 temperature: 0.5,
-                max_tokens: 3000
+                max_tokens: 1000
             };
 
             try {
@@ -357,15 +354,15 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     renderizarMensagem(textoIA, "ai-message", null);
 
                 } else if (dados.error) {
-                    renderizarMensagem("❌ Erro TuTor-ai: " + dados.error.message, "error-message", null);
+                    renderizarMensagem("coloque imagens separadas para funcionar nao tudo junto⚠️<br><br><small style='color: #fca5a5;'>Detalhe: " + dados.error.message + "</small>", "error-message", null);
                 } else {
-                    renderizarMensagem("❌ Erro ao processar resposta.", "error-message", null);
+                    renderizarMensagem("coloque imagens separadas para funcionar nao tudo junto⚠️", "error-message", null);
                 }
 
             } catch (erro) {
                 const loadEl = document.getElementById(loadingId);
                 if (loadEl) loadEl.remove();
-                renderizarMensagem("❌ Erro de conexão com a API.", "error-message", null);
+                renderizarMensagem("coloque imagens separadas para funcionar nao tudo junto⚠️", "error-message", null);
             }
         }
 
@@ -382,15 +379,15 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 conteudoHTML += `</div>`;
             }
 
-            if (classe === "ai-message" && !texto.startsWith("❌") && typeof marked !== "undefined") {
+            if (classe === "ai-message" && !texto.startsWith("coloque imagens") && typeof marked !== "undefined") {
                 conteudoHTML += marked.parse(texto);
             } else {
-                conteudoHTML += texto.replace(/\n/g, '<br>');
+                conteudoHTML += texto;
             }
 
             div.innerHTML = conteudoHTML;
 
-            if (classe === "ai-message" && !texto.startsWith("❌")) {
+            if (classe === "ai-message" && !texto.startsWith("coloque imagens")) {
                 const acoesDiv = document.createElement("div");
                 acoesDiv.className = "msg-actions";
 
