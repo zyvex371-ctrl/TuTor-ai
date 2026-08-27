@@ -2,29 +2,36 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TuTor-ai - Sua Professora Particular Inteligente</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
         
-        header { background: #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        header { background: #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 10; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .header-title { display: flex; align-items: center; gap: 8px; }
         h1 { font-size: 16px; color: #38bdf8; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
         .menu-btn { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 0 4px; transition: 0.2s; }
         .menu-btn:hover { color: #38bdf8; }
 
-        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%); }
+        #chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%); padding-bottom: 20px; }
         .message { max-width: 88%; padding: 14px 16px; border-radius: 12px; line-height: 1.5; font-size: 14px; word-break: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; }
         .user-message { background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .ai-message { background: #1e293b; color: #f1f5f9; align-self: flex-start; border: 1px solid #334155; border-bottom-left-radius: 2px; }
         .error-message { background: #450a0a; color: #fca5a5; align-self: center; border: 1px solid #7f1d1d; text-align: center; }
 
-        .image-preview-container { margin-bottom: 8px; max-width: 200px; border-radius: 8px; overflow: hidden; border: 1px solid #475569; }
-        .image-preview-container img { width: 100%; height: auto; display: block; }
+        /* PREVIEW DAS FOTOS MÚLTIPLAS ANTES DE ENVIAR */
+        .preview-bar { display: flex; gap: 8px; padding: 8px 12px; background: #0f172a; border-top: 1px solid #334155; overflow-x: auto; flex-shrink: 0; min-height: 0; }
+        .preview-bar:empty { display: none; }
+        .preview-thumb { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #38bdf8; flex-shrink: 0; }
+        .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-thumb button { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        .input-area { background: #1e293b; padding: 12px 16px; display: flex; gap: 10px; border-top: 1px solid #334155; align-items: flex-end; }
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; margin-bottom: 8px; max-width: 280px; }
+        .image-grid img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; }
+
+        .input-area { background: #1e293b; padding: 12px 16px; display: flex; gap: 10px; border-top: 1px solid #334155; align-items: flex-end; flex-shrink: 0; z-index: 20; }
         textarea { flex: 1; background: #0f172a; border: 1px solid #334151; color: white; padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; resize: none; max-height: 120px; font-family: inherit; line-height: 1.4; transition: 0.2s; }
         textarea:focus { border-color: #38bdf8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.2); }
         textarea::placeholder { color: #64748b; }
@@ -33,7 +40,7 @@
         .action-icon-btn:hover { color: #38bdf8; }
 
         button.send-btn { background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; height: 42px; font-size: 14px; flex-shrink: 0; transition: 0.2s; }
-        button.send-btn:hover { background: #0284c7; }
+        button.send-btn:hover { background: #0369a1; }
 
         .msg-actions { display: flex; gap: 10px; margin-top: 10px; border-top: 1px solid #334155; padding-top: 8px; }
         .speak-btn, .copy-btn { background: #334155; color: #cbd5e1; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
@@ -83,10 +90,12 @@
 
     <div id="chat-box"></div>
 
+    <div class="preview-bar" id="previewBar"></div>
+
     <div class="input-area">
-        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="tratarImagem(event)">
-        <button class="action-icon-btn" onclick="document.getElementById('imageInput').click()" title="Enviar foto do exercício">📷</button>
-        <textarea id="user-input" placeholder="Tire foto da tarefa ou digite sua dúvida..." rows="1" oninput="ajustarAltura(this)"></textarea>
+        <input type="file" id="imageInput" accept="image/*" multiple style="display: none;" onchange="tratarImagens(event)">
+        <button class="action-icon-btn" onclick="document.getElementById('imageInput').click()" title="Enviar fotos das tarefas (Até 6)">📷</button>
+        <textarea id="user-input" placeholder="Tire foto das tarefas (até 6) ou digite..." rows="1" oninput="ajustarAltura(this)"></textarea>
         <button class="send-btn" onclick="enviarMensagem()">Enviar</button>
     </div>
 
@@ -96,12 +105,14 @@
 
         const chatBox = document.getElementById("chat-box");
         const userInput = document.getElementById("user-input");
-        let imagemBase64Atual = null;
+        const previewBar = document.getElementById("previewBar");
+        
+        let imagensBase64Atuais = []; // Array para armazenar até 6 fotos
 
         const systemPromptTutor = `Você é a TuTor-ai, uma professora particular inteligente, paciente e socrática. 
 REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objetivo é fazê-lo pensar e guiar o raciocínio dele passo a passo.
-- Se o aluno mandar foto ou exercício, analise-o, diga do que se trata e faça uma pergunta instigante para começar a resolver juntos.
-- Se o aluno errar uma conta (ex: 7 x 8 = 54), explique carinhosamente o erro passo a passo (ex: 7 grupos de 8...).
+- Se o aluno mandar fotos ou exercícios, analise-os, diga do que se trata e faça uma pergunta instigante para começar a resolver juntos.
+- Se o aluno errar uma conta (ex: 7 x 8 = 54), explique carinhosamente o erro passo a passo.
 - Seja encorajadora e use explicações claras e didáticas.`;
 
         let sessoes = [];
@@ -153,11 +164,13 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             sessoes.unshift({ id: novoId, titulo: 'Nova Tarefa', mensagens: [] });
             chatAtualId = novoId;
             salvarDados();
+            imagensBase64Atuais = [];
+            atualizarPreview();
             
             if (chatBox) {
                 chatBox.innerHTML = `
                     <div class="message ai-message">
-                        👋 Olá! Eu sou a <strong>TuTor-ai</strong>, sua professora particular. Tire uma foto da sua tarefa de casa 📷 ou digite sua dúvida para começarmos a resolver juntos!
+                        👋 Olá! Eu sou a <strong>TuTor-ai</strong>, sua professora particular. Você pode enviar até 6 fotos 📷 de uma vez das suas tarefas ou digitar sua dúvida para começarmos!
                     </div>
                 `;
             }
@@ -165,17 +178,49 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             fecharMenu();
         }
 
-        function tratarImagem(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        function tratarImagens(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagemBase64Atual = e.target.result;
-                userInput.placeholder = "Foto anexada! Digite sua pergunta sobre ela...";
-                alert("📸 Foto carregada com sucesso! Agora digite sua dúvida.");
-            };
-            reader.readAsDataURL(file);
+            // Limita a um total de 6 fotos
+            const vagasRestantes = 6 - imagensBase64Atuais.length;
+            if (vagasRestantes <= 0) {
+                alert("⚠️ Você já selecionou o limite máximo de 6 fotos.");
+                return;
+            }
+
+            const arquivosParaProcessar = files.slice(0, vagasRestantes);
+
+            arquivosParaProcessar.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagensBase64Atuais.push(e.target.result);
+                    atualizarPreview();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Reseta o input para permitir selecionar a mesma foto se precisar
+            event.target.value = '';
+        }
+
+        function removerFoto(index) {
+            imagensBase64Atuais.splice(index, 1);
+            atualizarPreview();
+        }
+
+        function atualizarPreview() {
+            previewBar.innerHTML = '';
+            imagensBase64Atuais.forEach((imgSrc, index) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'preview-thumb';
+                
+                thumb.innerHTML = `
+                    <img src="${imgSrc}" alt="Preview">
+                    <button onclick="removerFoto(${index})">✕</button>
+                `;
+                previewBar.appendChild(thumb);
+            });
         }
 
         function salvarDados() {
@@ -214,6 +259,9 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             const sessao = sessoes.find(s => s.id === id);
             if (!sessao) return;
             
+            imagensBase64Atuais = [];
+            atualizarPreview();
+
             if (chatBox) chatBox.innerHTML = '';
             
             if (sessao.mensagens.length === 0) {
@@ -222,7 +270,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 }
             } else {
                 sessao.mensagens.forEach(msg => {
-                    renderizarMensagem(msg.texto, msg.classe, msg.imagem);
+                    renderizarMensagem(msg.texto, msg.classe, msg.imagens);
                 });
             }
             fecharMenu();
@@ -236,42 +284,43 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             }
 
             const textoUsuario = userInput.value.trim();
-            if (textoUsuario === "" && !imagemBase64Atual) return;
+            if (textoUsuario === "" && imagensBase64Atuais.length === 0) return;
 
-            renderizarMensagem(textoUsuario, "user-message", imagemBase64Atual);
+            const fotosParaEnviar = [...imagensBase64Atuais];
+
+            renderizarMensagem(textoUsuario, "user-message", fotosParaEnviar);
             
-            const imgEnviada = imagemBase64Atual;
             userInput.value = "";
             userInput.style.height = 'auto';
-            imagemBase64Atual = null;
-            userInput.placeholder = "Tire foto da tarefa ou digite sua dúvida...";
+            imagensBase64Atuais = [];
+            atualizarPreview();
 
             const sessao = sessoes.find(s => s.id === chatAtualId);
             if (!sessao) return;
 
             if (sessao.mensagens.length === 0 && sessao.titulo === 'Nova Tarefa') {
-                sessao.titulo = textoUsuario ? textoUsuario.substring(0, 22) + '...' : 'Tarefa com Foto';
+                sessao.titulo = textoUsuario ? textoUsuario.substring(0, 22) + '...' : 'Tarefas em Fotos';
                 carregarListaChats();
             }
 
-            sessao.mensagens.push({ texto: textoUsuario, classe: "user-message", imagem: imgEnviada });
+            sessao.mensagens.push({ texto: textoUsuario, classe: "user-message", imagens: fotosParaEnviar });
             salvarDados();
 
             const loadingId = "load_" + Date.now();
             const loadDiv = document.createElement("div");
             loadDiv.className = "message ai-message";
             loadDiv.id = loadingId;
-            loadDiv.innerText = "👩‍🏫 Analisando exercício e preparando explicação...";
+            loadDiv.innerText = "👩‍🏫 Analisando os exercícios e preparando explicação...";
             chatBox.appendChild(loadDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            let conteudoMensagem = [ { type: "text", text: textoUsuario || "Analise esta tarefa de casa." } ];
-            if (imgEnviada) {
-                conteudoMensagem.push({ type: "image_url", image_url: { url: imgEnviada } });
-            }
+            let conteudoMensagem = [ { type: "text", text: textoUsuario || "Analise estas tarefas de casa." } ];
+            fotosParaEnviar.forEach(img => {
+                conteudoMensagem.push({ type: "image_url", image_url: { url: img } });
+            });
 
             let corpoRequisicao = {
-                model: "google/gemini-2.5-flash", // Modelo multimodal gratuito veloz e excelente para fotos
+                model: "google/gemini-2.5-flash",
                 messages: [
                     { role: "system", content: systemPromptTutor },
                     ...sessao.mensagens.slice(-6).map(m => ({
@@ -302,7 +351,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
 
                 if (dados.choices && dados.choices.length > 0) {
                     const textoIA = dados.choices[0].message.content;
-                    sessao.mensagens.push({ texto: textoIA, classe: "ai-message", imagem: null });
+                    sessao.mensagens.push({ texto: textoIA, classe: "ai-message", imagens: null });
                     salvarDados();
                     
                     renderizarMensagem(textoIA, "ai-message", null);
@@ -320,13 +369,17 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             }
         }
 
-        function renderizarMensagem(texto, classe, imagem) {
+        function renderizarMensagem(texto, classe, imagens) {
             const div = document.createElement("div");
             div.className = `message ${classe}`;
             
             let conteudoHTML = "";
-            if (imagem) {
-                conteudoHTML += `<div class="image-preview-container"><img src="${imagem}" alt="Tarefa"></div>`;
+            if (imagens && imagens.length > 0) {
+                conteudoHTML += `<div class="image-grid">`;
+                imagens.forEach(img => {
+                    conteudoHTML += `<img src="${img}" alt="Tarefa">`;
+                });
+                conteudoHTML += `</div>`;
             }
 
             if (classe === "ai-message" && !texto.startsWith("❌") && typeof marked !== "undefined") {
@@ -337,7 +390,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
 
             div.innerHTML = conteudoHTML;
 
-            // Se for mensagem da IA, adiciona botão de voz (falar)
             if (classe === "ai-message" && !texto.startsWith("❌")) {
                 const acoesDiv = document.createElement("div");
                 acoesDiv.className = "msg-actions";
@@ -362,7 +414,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 alert("Seu navegador não suporta leitura de voz.");
                 return;
             }
-            window.speechSynthesis.cancel(); // Para qualquer fala anterior
+            window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(textoLimpo.replace(/[*#_`]/g, ''));
             utterance.lang = 'pt-BR';
             utterance.rate = 1.0;
