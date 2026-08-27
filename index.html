@@ -106,7 +106,7 @@
         const userInput = document.getElementById("user-input");
         const previewBar = document.getElementById("previewBar");
         
-        let imagensBase64Atuais = []; // Array para até 6 fotos
+        let imagensBase64Atuais = [];
 
         const systemPromptTutor = `Você é a TuTor-ai, uma professora particular inteligente, paciente e socrática. 
 REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objetivo é fazê-lo pensar e guiar o raciocínio dele passo a passo.
@@ -177,6 +177,40 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             fecharMenu();
         }
 
+        // FUNÇÃO DE COMPRESSÃO E REDIMENSIONAMENTO AUTOMÁTICO DE IMAGEM
+        function comprimirImagem(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let largura = img.width;
+                    let altura = img.height;
+                    
+                    // Reduz para no máximo 1024px mantendo a proporção para ficar leve
+                    const maxDim = 1024;
+                    if (largura > altura && largura > maxDim) {
+                        altura = Math.round((altura * maxDim) / largura);
+                        largura = maxDim;
+                    } else if (altura > maxDim) {
+                        largura = Math.round((largura * maxDim) / altura);
+                        altura = maxDim;
+                    }
+
+                    canvas.width = largura;
+                    canvas.height = altura;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, largura, altura);
+                    
+                    // Comprime para JPEG com qualidade 0.75 (leve e nítido)
+                    const dataUrlComprimida = canvas.toDataURL('image/jpeg', 0.75);
+                    callback(dataUrlComprimida);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         function tratarImagens(event) {
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
@@ -190,12 +224,10 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             const arquivosParaProcessar = files.slice(0, vagasRestantes);
 
             arquivosParaProcessar.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagensBase64Atuais.push(e.target.result);
+                comprimirImagem(file, function(imgComprimida) {
+                    imagensBase64Atuais.push(imgComprimida);
                     atualizarPreview();
-                };
-                reader.readAsDataURL(file);
+                });
             });
 
             event.target.value = '';
@@ -316,7 +348,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             });
 
             let corpoRequisicao = {
-                model: "openai/gpt-4o-mini", // GPT-4o-mini lidando com as imagens múltiplas
+                model: "openai/gpt-4o-mini",
                 messages: [
                     { role: "system", content: systemPromptTutor },
                     ...sessao.mensagens.slice(-6).map(m => ({
