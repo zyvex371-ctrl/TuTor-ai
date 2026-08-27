@@ -1,1 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuTor-ai - Sua Professora Particular Inteligente</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        header { background: #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .header-title { display: flex; align-items: center; gap: 8px; }
+        h1 { font-size: 16px; color: #38bdf8; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+        .menu-btn { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 0 4px; transition: 0.2s; }
+        .menu-btn:hover { color: #38bdf8; }
 
+        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%); }
+        .message { max-width: 88%; padding: 14px 16px; border-radius: 12px; line-height: 1.5; font-size: 14px; word-break: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; }
+        .user-message { background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .ai-message { background: #1e293b; color: #f1f5f9; align-self: flex-start; border: 1px solid #334155; border-bottom-left-radius: 2px; }
+        .error-message { background: #450a0a; color: #fca5a5; align-self: center; border: 1px solid #7f1d1d; text-align: center; }
+
+        .image-preview-container { margin-bottom: 8px; max-width: 200px; border-radius: 8px; overflow: hidden; border: 1px solid #475569; }
+        .image-preview-container img { width: 100%; height: auto; display: block; }
+
+        .input-area { background: #1e293b; padding: 12px 16px; display: flex; gap: 10px; border-top: 1px solid #334155; align-items: flex-end; }
+        textarea { flex: 1; background: #0f172a; border: 1px solid #334151; color: white; padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; resize: none; max-height: 120px; font-family: inherit; line-height: 1.4; transition: 0.2s; }
+        textarea:focus { border-color: #38bdf8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.2); }
+        textarea::placeholder { color: #64748b; }
+
+        .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .action-icon-btn:hover { color: #38bdf8; }
+
+        button.send-btn { background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; height: 42px; font-size: 14px; flex-shrink: 0; transition: 0.2s; }
+        button.send-btn:hover { background: #0284c7; }
+
+        .msg-actions { display: flex; gap: 10px; margin-top: 10px; border-top: 1px solid #334155; padding-top: 8px; }
+        .speak-btn, .copy-btn { background: #334155; color: #cbd5e1; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .speak-btn:hover, .copy-btn:hover { background: #38bdf8; color: #0f172a; font-weight: bold; }
+
+        pre { background: #090d16; padding: 10px; border-radius: 6px; margin-top: 8px; overflow-x: auto; border: 1px solid #1e293b; }
+        code { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #38bdf8; }
+
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #0b0f19; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; border-right: 1px solid #1e293b; display: flex; flex-direction: column; box-shadow: 10px 0 30px rgba(0,0,0,0.8); }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; }
+        .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .history-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #94a3b8; background: #1e293b; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: 0.2s; }
+        .history-item:hover { background: #334155; color: #f1f5f9; }
+        .history-item.active { color: white; background: #1e293b; border: 1px solid #38bdf8; }
+        .history-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); display: none; z-index: 99; }
+        .overlay.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="fecharMenu()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3 style="font-size: 15px; color: #38bdf8; font-weight: 700;">📚 TuTor-ai Estudos</h3>
+            <button class="menu-btn" onclick="fecharMenu()" style="font-size: 18px;">✕</button>
+        </div>
+        <div style="padding: 12px;">
+            <button onclick="novoChat()" style="width: 100%; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s;">+ Nova Dúvida</button>
+        </div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+
+    <header>
+        <div class="header-title">
+            <button class="menu-btn" onclick="abrirMenu()">☰</button>
+            <h1>TuTor-ai</h1>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="menu-btn" onclick="configurarChave()" title="Configurar Chave API" style="font-size: 15px;">🔑</button>
+        </div>
+    </header>
+
+    <div id="chat-box"></div>
+
+    <div class="input-area">
+        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="tratarImagem(event)">
+        <button class="action-icon-btn" onclick="document.getElementById('imageInput').click()" title="Enviar foto do exercício">📷</button>
+        <textarea id="user-input" placeholder="Tire foto da tarefa ou digite sua dúvida..." rows="1" oninput="ajustarAltura(this)"></textarea>
+        <button class="send-btn" onclick="enviarMensagem()">Enviar</button>
+    </div>
+
+    <script>
+        let OR_API_KEY = localStorage.getItem('tutor_or_key') || "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";
+        localStorage.setItem('tutor_or_key', OR_API_KEY);
+
+        const chatBox = document.getElementById("chat-box");
+        const userInput = document.getElementById("user-input");
+        let imagemBase64Atual = null;
+
+        const systemPromptTutor = `Você é a TuTor-ai, uma professora particular inteligente, paciente e socrática. 
+REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objetivo é fazê-lo pensar e guiar o raciocínio dele passo a passo.
+- Se o aluno mandar foto ou exercício, analise-o, diga do que se trata e faça uma pergunta instigante para começar a resolver juntos.
+- Se o aluno errar uma conta (ex: 7 x 8 = 54), explique carinhosamente o erro passo a passo (ex: 7 grupos de 8...).
+- Seja encorajadora e use explicações claras e didáticas.`;
+
+        let sessoes = [];
+        try {
+            sessoes = JSON.parse(localStorage.getItem('tutor_chats')) || [];
+        } catch (e) {
+            sessoes = [];
+        }
+
+        let chatAtualId = localStorage.getItem('tutor_atual_id') || null;
+
+        window.onload = function() {
+            carregarListaChats();
+            if (sessoes.length === 0 || !chatAtualId) {
+                novoChat();
+            } else {
+                carregarChat(chatAtualId);
+            }
+        };
+
+        function configurarChave() {
+            fecharMenu();
+            const atual = OR_API_KEY || "";
+            const nova = prompt("🔑 Digite ou cole sua chave do OpenRouter (sk-or-v1-...):", atual);
+            if (nova !== null && nova.trim() !== "") {
+                OR_API_KEY = nova.trim();
+                localStorage.setItem('tutor_or_key', OR_API_KEY);
+                alert("✅ Chave atualizada!");
+            }
+        }
+
+        function ajustarAltura(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
+
+        function abrirMenu() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function fecharMenu() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        function novoChat() {
+            const novoId = 'chat_' + Date.now();
+            sessoes.unshift({ id: novoId, titulo: 'Nova Tarefa', mensagens: [] });
+            chatAtualId = novoId;
+            salvarDados();
+            
+            if (chatBox) {
+                chatBox.innerHTML = `
+                    <div class="message ai-message">
+                        👋 Olá! Eu sou a <strong>TuTor-ai</strong>, sua professora particular. Tire uma foto da sua tarefa de casa 📷 ou digite sua dúvida para começarmos a resolver juntos!
+                    </div>
+                `;
+            }
+            carregarListaChats();
+            fecharMenu();
+        }
+
+        function tratarImagem(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagemBase64Atual = e.target.result;
+                userInput.placeholder = "Foto anexada! Digite sua pergunta sobre ela...";
+                alert("📸 Foto carregada com sucesso! Agora digite sua dúvida.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function salvarDados() {
+            try {
+                localStorage.setItem('tutor_chats', JSON.stringify(sessoes));
+                localStorage.setItem('tutor_atual_id', chatAtualId);
+            } catch (e) {
+                console.error("Erro ao salvar:", e);
+            }
+        }
+
+        function carregarListaChats() {
+            const listDiv = document.getElementById('history-list');
+            if (!listDiv) return;
+            listDiv.innerHTML = '';
+            
+            sessoes.forEach(sessao => {
+                const item = document.createElement('div');
+                item.className = `history-item ${sessao.id === chatAtualId ? 'active' : ''}`;
+                
+                const spanTexto = document.createElement('span');
+                spanTexto.className = 'history-text';
+                spanTexto.innerText = sessao.titulo;
+
+                item.appendChild(spanTexto);
+                item.onclick = () => carregarChat(sessao.id);
+                listDiv.appendChild(item);
+            });
+        }
+
+        function carregarChat(id) {
+            chatAtualId = id;
+            salvarDados();
+            carregarListaChats();
+            
+            const sessao = sessoes.find(s => s.id === id);
+            if (!sessao) return;
+            
+            if (chatBox) chatBox.innerHTML = '';
+            
+            if (sessao.mensagens.length === 0) {
+                if (chatBox) {
+                    chatBox.innerHTML = `<div class="message ai-message">📚 Conversa carregada. Como posso ajudar?</div>`;
+                }
+            } else {
+                sessao.mensagens.forEach(msg => {
+                    renderizarMensagem(msg.texto, msg.classe, msg.imagem);
+                });
+            }
+            fecharMenu();
+        }
+
+        async function enviarMensagem() {
+            if (!OR_API_KEY || !OR_API_KEY.startsWith("sk-or-")) {
+                alert("⚠️ Insira uma chave OpenRouter válida.");
+                configurarChave();
+                return;
+            }
+
+            const textoUsuario = userInput.value.trim();
+            if (textoUsuario === "" && !imagemBase64Atual) return;
+
+            renderizarMensagem(textoUsuario, "user-message", imagemBase64Atual);
+            
+            const imgEnviada = imagemBase64Atual;
+            userInput.value = "";
+            userInput.style.height = 'auto';
+            imagemBase64Atual = null;
+            userInput.placeholder = "Tire foto da tarefa ou digite sua dúvida...";
+
+            const sessao = sessoes.find(s => s.id === chatAtualId);
+            if (!sessao) return;
+
+            if (sessao.mensagens.length === 0 && sessao.titulo === 'Nova Tarefa') {
+                sessao.titulo = textoUsuario ? textoUsuario.substring(0, 22) + '...' : 'Tarefa com Foto';
+                carregarListaChats();
+            }
+
+            sessao.mensagens.push({ texto: textoUsuario, classe: "user-message", imagem: imgEnviada });
+            salvarDados();
+
+            const loadingId = "load_" + Date.now();
+            const loadDiv = document.createElement("div");
+            loadDiv.className = "message ai-message";
+            loadDiv.id = loadingId;
+            loadDiv.innerText = "👩‍🏫 Analisando exercício e preparando explicação...";
+            chatBox.appendChild(loadDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            let conteudoMensagem = [ { type: "text", text: textoUsuario || "Analise esta tarefa de casa." } ];
+            if (imgEnviada) {
+                conteudoMensagem.push({ type: "image_url", image_url: { url: imgEnviada } });
+            }
+
+            let corpoRequisicao = {
+                model: "google/gemini-2.5-flash", // Modelo multimodal gratuito veloz e excelente para fotos
+                messages: [
+                    { role: "system", content: systemPromptTutor },
+                    ...sessao.mensagens.slice(-6).map(m => ({
+                        role: m.classe === "user-message" ? "user" : "assistant",
+                        content: m.texto
+                    })),
+                    { role: "user", content: conteudoMensagem }
+                ],
+                temperature: 0.5,
+                max_tokens: 3000
+            };
+
+            try {
+                const resposta = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${OR_API_KEY}`,
+                        "HTTP-Referer": window.location.origin,
+                        "X-Title": "TuTor-ai"
+                    },
+                    body: JSON.stringify(corpoRequisicao)
+                });
+
+                const dados = await resposta.json();
+                const loadEl = document.getElementById(loadingId);
+                if (loadEl) loadEl.remove();
+
+                if (dados.choices && dados.choices.length > 0) {
+                    const textoIA = dados.choices[0].message.content;
+                    sessao.mensagens.push({ texto: textoIA, classe: "ai-message", imagem: null });
+                    salvarDados();
+                    
+                    renderizarMensagem(textoIA, "ai-message", null);
+
+                } else if (dados.error) {
+                    renderizarMensagem("❌ Erro TuTor-ai: " + dados.error.message, "error-message", null);
+                } else {
+                    renderizarMensagem("❌ Erro ao processar resposta.", "error-message", null);
+                }
+
+            } catch (erro) {
+                const loadEl = document.getElementById(loadingId);
+                if (loadEl) loadEl.remove();
+                renderizarMensagem("❌ Erro de conexão com a API.", "error-message", null);
+            }
+        }
+
+        function renderizarMensagem(texto, classe, imagem) {
+            const div = document.createElement("div");
+            div.className = `message ${classe}`;
+            
+            let conteudoHTML = "";
+            if (imagem) {
+                conteudoHTML += `<div class="image-preview-container"><img src="${imagem}" alt="Tarefa"></div>`;
+            }
+
+            if (classe === "ai-message" && !texto.startsWith("❌") && typeof marked !== "undefined") {
+                conteudoHTML += marked.parse(texto);
+            } else {
+                conteudoHTML += texto.replace(/\n/g, '<br>');
+            }
+
+            div.innerHTML = conteudoHTML;
+
+            // Se for mensagem da IA, adiciona botão de voz (falar)
+            if (classe === "ai-message" && !texto.startsWith("❌")) {
+                const acoesDiv = document.createElement("div");
+                acoesDiv.className = "msg-actions";
+
+                const btnFalar = document.createElement("button");
+                btnFalar.className = "speak-btn";
+                btnFalar.innerHTML = "🔊 Ouvir";
+                btnFalar.onclick = () => falarTexto(texto);
+
+                acoesDiv.appendChild(btnFalar);
+                div.appendChild(acoesDiv);
+            }
+
+            if (chatBox) {
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        function falarTexto(textoLimpo) {
+            if (!window.speechSynthesis) {
+                alert("Seu navegador não suporta leitura de voz.");
+                return;
+            }
+            window.speechSynthesis.cancel(); // Para qualquer fala anterior
+            const utterance = new SpeechSynthesisUtterance(textoLimpo.replace(/[*#_`]/g, ''));
+            utterance.lang = 'pt-BR';
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    </script>
+</body>
+</html>
