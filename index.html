@@ -6,16 +6,16 @@
     <title>TuTor-ai - Sua Professora Particular Inteligente</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
         
         header { background: #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 10; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .header-title { display: flex; align-items: center; gap: 8px; }
         h1 { font-size: 16px; color: #38bdf8; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-        .menu-btn { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 0 4px; transition: 0.2s; }
+        .menu-btn { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px; transition: 0.2s; }
         .menu-btn:hover { color: #38bdf8; }
 
-        #chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%); padding-bottom: 20px; }
+        #chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%); padding-bottom: 30px; }
         .message { max-width: 88%; padding: 14px 16px; border-radius: 12px; line-height: 1.5; font-size: 14px; word-break: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; }
         .user-message { background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .ai-message { background: #1e293b; color: #f1f5f9; align-self: flex-start; border: 1px solid #334155; border-bottom-left-radius: 2px; }
@@ -30,7 +30,7 @@
         .image-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; margin-bottom: 8px; max-width: 280px; }
         .image-grid img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; }
 
-        .input-area { background: #1e293b; padding: 12px 16px; display: flex; gap: 10px; border-top: 1px solid #334155; align-items: flex-end; flex-shrink: 0; z-index: 20; }
+        .input-area { background: #1e293b; padding: 12px 16px; display: flex; gap: 10px; border-top: 1px solid #334155; align-items: flex-end; flex-shrink: 0; z-index: 50; }
         textarea { flex: 1; background: #0f172a; border: 1px solid #334151; color: white; padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; resize: none; max-height: 120px; font-family: inherit; line-height: 1.4; transition: 0.2s; }
         textarea:focus { border-color: #38bdf8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.2); }
         textarea::placeholder { color: #64748b; }
@@ -38,8 +38,8 @@
         .action-icon-btn { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .action-icon-btn:hover { color: #38bdf8; }
 
-        button.send-btn { background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; height: 42px; font-size: 14px; flex-shrink: 0; transition: 0.2s; }
-        button.send-btn:hover { background: #0369a1; }
+        button.send-btn { background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; height: 42px; font-size: 14px; flex-shrink: 0; transition: 0.2s; pointer-events: auto; }
+        button.send-btn:active { background: #0369a1; transform: scale(0.96); }
 
         .msg-actions { display: flex; gap: 10px; margin-top: 10px; border-top: 1px solid #334155; padding-top: 8px; }
         .speak-btn { background: #334155; color: #cbd5e1; border: none; padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
@@ -95,15 +95,17 @@
         <input type="file" id="imageInput" accept="image/*" multiple style="display: none;" onchange="tratarImagens(event)">
         <button class="action-icon-btn" onclick="document.getElementById('imageInput').click()" title="Enviar fotos das tarefas (Até 6)">📷</button>
         <textarea id="user-input" placeholder="Tire foto das tarefas (até 6) ou digite..." rows="1" oninput="ajustarAltura(this)"></textarea>
-        <button class="send-btn" onclick="enviarMensagem()">Enviar</button>
+        <button class="send-btn" id="sendBtn">Enviar</button>
     </div>
 
     <script>
-        let OR_API_KEY = localStorage.getItem('tutor_or_key') || "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";
+        // CHAVE NOVA CONFIGURADA DE FÁBRICA
+        let OR_API_KEY = localStorage.getItem('tutor_or_key') || "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";
         localStorage.setItem('tutor_or_key', OR_API_KEY);
 
         const chatBox = document.getElementById("chat-box");
         const userInput = document.getElementById("user-input");
+        const sendBtn = document.getElementById("sendBtn");
         const previewBar = document.getElementById("previewBar");
         
         let imagensBase64Atuais = [];
@@ -130,6 +132,12 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             } else {
                 carregarChat(chatAtualId);
             }
+
+            sendBtn.addEventListener('click', enviarMensagem);
+            sendBtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                enviarMensagem();
+            });
         };
 
         function configurarChave() {
@@ -186,7 +194,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     let largura = img.width;
                     let altura = img.height;
                     
-                    const maxDim = 800; // Otimizado para economizar tokens
+                    const maxDim = 800; // Reduzido para garantir leveza e evitar estouro de cota
                     if (largura > altura && largura > maxDim) {
                         altura = Math.round((altura * maxDim) / largura);
                         largura = maxDim;
@@ -344,7 +352,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 conteudoMensagem.push({ type: "image_url", image_url: { url: img } });
             });
 
-            // Envia apenas as últimas 2 mensagens do histórico para economizar tokens e evitar estouro de cota
             let historicoRecente = sessao.mensagens.slice(-3, -1).map(m => ({
                 role: m.classe === "user-message" ? "user" : "assistant",
                 content: m.texto
@@ -358,7 +365,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     { role: "user", content: conteudoMensagem }
                 ],
                 temperature: 0.5,
-                max_tokens: 500 // Limite otimizado para evitar estouro de créditos
+                max_tokens: 500
             };
 
             try {
@@ -385,7 +392,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     renderizarMensagem(textoIA, "ai-message", null);
 
                 } else if (dados.error) {
-                    renderizarMensagem("⚠️ O limite de uso gratuito foi atingido momentaneamente. Clique em '+ Nova Dúvida' no menu lateral para limpar o histórico e continuar!", "error-message", null);
+                    renderizarMensagem("⚠️ O limite de uso gratuito foi atingido. Clique em '+ Nova Dúvida' no menu lateral para limpar o histórico e continuar!", "error-message", null);
                 } else {
                     renderizarMensagem("⚠️ Erro ao processar. Tente novamente.", "error-message", null);
                 }
