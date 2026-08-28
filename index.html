@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TuTor-ai - Sua Professora Particular Inteligente</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
@@ -93,8 +94,8 @@
 
     <div class="input-area">
         <input type="file" id="imageInput" accept="image/*" multiple style="display: none;" onchange="tratarImagens(event)">
-        <button class="action-icon-btn" onclick="document.getElementById('imageInput').click()" title="Enviar fotos das tarefas (Até 6)">📷</button>
-        <textarea id="user-input" placeholder="Tire foto das tarefas (até 6) ou digite..." rows="1" oninput="ajustarAltura(this)"></textarea>
+        <button class="action-icon-btn" onclick="document.getElementById('imageInput').click()" title="Ler foto da tarefa (OCR)">📷</button>
+        <textarea id="user-input" placeholder="Tire foto da tarefa (lê o texto automático) ou digite..." rows="1" oninput="ajustarAltura(this)"></textarea>
         <button class="send-btn" id="sendBtn">Enviar</button>
     </div>
 
@@ -108,10 +109,11 @@
         const previewBar = document.getElementById("previewBar");
         
         let imagensBase64Atuais = [];
+        let textoExtraidoDasFotos = "";
 
         const systemPromptTutor = `Você é a TuTor-ai, uma professora particular inteligente, paciente e socrática. 
 REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objetivo é fazê-lo pensar e guiar o raciocínio dele passo a passo.
-- Se o aluno mandar fotos ou exercícios, analise-os, diga do que se trata e faça uma pergunta instigante para começar a resolver juntos.
+- Se o aluno mandar um exercício (extraído por foto), analise-o e faça uma pergunta instigante para começar a resolver juntos.
 - Se o aluno errar uma conta, explique carinhosamente o erro passo a passo.
 - Seja encorajadora e use explicações claras e didáticas.`;
 
@@ -171,12 +173,13 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             chatAtualId = novoId;
             salvarDados();
             imagensBase64Atuais = [];
+            textoExtraidoDasFotos = "";
             atualizarPreview();
             
             if (chatBox) {
                 chatBox.innerHTML = `
                     <div class="message ai-message">
-                        👋 Olá! Eu sou a <strong>TuTor-ai</strong>, sua professora particular. Você pode enviar até 6 fotos 📷 de uma vez das suas tarefas ou digitar sua dúvida para começarmos!
+                        👋 Olá! Eu sou a <strong>TuTor-ai</strong>, sua professora particular. Clique na câmera 📷 para enviar a foto da tarefa (ela lê o texto automaticamente sem gastar tokens de imagem!) ou digite sua dúvida.
                     </div>
                 `;
             }
@@ -184,56 +187,47 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             fecharMenu();
         }
 
-        function comprimirImagem(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let largura = img.width;
-                    let altura = img.height;
-                    
-                    const maxDim = 800;
-                    if (largura > altura && largura > maxDim) {
-                        altura = Math.round((altura * maxDim) / largura);
-                        largura = maxDim;
-                    } else if (altura > maxDim) {
-                        largura = Math.round((largura * maxDim) / altura);
-                        altura = maxDim;
-                    }
-
-                    canvas.width = largura;
-                    canvas.height = altura;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, largura, altura);
-                    
-                    const dataUrlComprimida = canvas.toDataURL('image/jpeg', 0.7);
-                    callback(dataUrlComprimida);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function tratarImagens(event) {
+        async function tratarImagens(event) {
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
 
-            const vagasRestantes = 6 - imagensBase64Atuais.length;
-            if (vagasRestantes <= 0) {
-                alert("⚠️ Você já selecionou o limite máximo de 6 fotos.");
-                return;
-            }
+            const file = files[0]; // Pega a primeira foto para fazer a leitura OCR
+            const reader = new FileReader();
 
-            const arquivosParaProcessar = files.slice(0, vagasRestantes);
+            reader.onload = async function(e) {
+                const imgSrc = e.target.result;
+                imagensBase64Atuais.push(imgSrc);
+                atualizarPreview();
 
-            arquivosParaProcessar.forEach(file => {
-                comprimirImagem(file, function(imgComprimida) {
-                    imagensBase64Atuais.push(imgComprimida);
-                    atualizarPreview();
-                });
-            });
+                // Mostra aviso de leitura de texto
+                const loadId = "ocr_load_" + Date.now();
+                const loadDiv = document.createElement("div");
+                loadDiv.className = "message ai-message";
+                loadDiv.id = loadId;
+                loadDiv.innerText = "🔍 Lendo o texto da imagem automaticamente...";
+                chatBox.appendChild(loadDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
 
+                try {
+                    // Executa o OCR direto no navegador do celular (Sem gastar tokens de IA em imagens!)
+                    const resultadoOCR = await Tesseract.recognize(imgSrc, 'por');
+                    const textoLido = resultadoOCR.data.text.trim();
+                    
+                    document.getElementById(loadId).remove();
+
+                    if (textoLido) {
+                        textoExtraidoDasFotos += "\n[Texto extraído da foto]: " + textoLido;
+                        userInput.value = textoLido;
+                        ajustarAltura(userInput);
+                    } else {
+                        alert("⚠️ Não consegui ler texto claro nesta foto. Tente digitar o enunciado.");
+                    }
+                } catch (err) {
+                    if(document.getElementById(loadId)) document.getElementById(loadId).remove();
+                    console.error("Erro OCR:", err);
+                }
+            };
+            reader.readAsDataURL(file);
             event.target.value = '';
         }
 
@@ -292,6 +286,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             if (!sessao) return;
             
             imagensBase64Atuais = [];
+            textoExtraidoDasFotos = "";
             atualizarPreview();
 
             if (chatBox) chatBox.innerHTML = '';
@@ -318,51 +313,48 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             const textoUsuario = userInput.value.trim();
             if (textoUsuario === "" && imagensBase64Atuais.length === 0) return;
 
-            const fotosParaEnviar = [...imagensBase64Atuais];
+            const fotosParaExibir = [...imagensBase64Atuais];
+            const promptFinalParaIA = textoUsuario + (textoExtraidoDasFotos ? "\n" + textoExtraidoDasFotos : "");
 
-            renderizarMensagem(textoUsuario, "user-message", fotosParaEnviar);
+            renderizarMensagem(textoUsuario, "user-message", fotosParaExibir);
             
             userInput.value = "";
             userInput.style.height = 'auto';
             imagensBase64Atuais = [];
+            textoExtraidoDasFotos = "";
             atualizarPreview();
 
             const sessao = sessoes.find(s => s.id === chatAtualId);
             if (!sessao) return;
 
             if (sessao.mensagens.length === 0 && sessao.titulo === 'Nova Tarefa') {
-                sessao.titulo = textoUsuario ? textoUsuario.substring(0, 22) + '...' : 'Tarefas em Fotos';
+                sessao.titulo = textoUsuario ? textoUsuario.substring(0, 22) + '...' : 'Dúvida de Tarefa';
                 carregarListaChats();
             }
 
-            sessao.mensagens.push({ texto: textoUsuario, classe: "user-message", imagens: fotosParaEnviar });
+            sessao.mensagens.push({ texto: promptFinalParaIA, classe: "user-message", imagens: fotosParaExibir });
             salvarDados();
 
             const loadingId = "load_" + Date.now();
             const loadDiv = document.createElement("div");
             loadDiv.className = "message ai-message";
             loadDiv.id = loadingId;
-            loadDiv.innerText = "👩‍🏫 Analisando os exercícios e preparando explicação...";
+            loadDiv.innerText = "👩‍🏫 Analisando exercício e preparando explicação...";
             chatBox.appendChild(loadDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
-
-            let conteudoMensagem = [ { type: "text", text: textoUsuario || "Analise estas tarefas de casa." } ];
-            fotosParaEnviar.forEach(img => {
-                conteudoMensagem.push({ type: "image_url", image_url: { url: img } });
-            });
 
             let historicoRecente = sessao.mensagens.slice(-3, -1).map(m => ({
                 role: m.classe === "user-message" ? "user" : "assistant",
                 content: m.texto
             }));
 
-            // USANDO GEMINI FLASH (IGUAL AO COSMO) PARA FOTOS E TEXTO COM MÁXIMA ESTABILIDADE
+            // AGORA ENVIA APENAS TEXTO LEVE, ECONOMIZANDO 100% DOS TOKENS DE IMAGEM!
             let corpoRequisicao = {
                 model: "google/gemini-2.5-flash",
                 messages: [
                     { role: "system", content: systemPromptTutor },
                     ...historicoRecente,
-                    { role: "user", content: conteudoMensagem }
+                    { role: "user", content: promptFinalParaIA }
                 ],
                 temperature: 0.5,
                 max_tokens: 1000
@@ -417,10 +409,14 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 conteudoHTML += `</div>`;
             }
 
+            // Limpa o texto técnico do OCR para o usuário ver limpo na bolha de chat
+            let textoExibicao = texto.replace(/\[Texto extraído da foto\]:[\s\S]*$/, '').trim();
+            if(!textoExibicao) textoExibicao = texto;
+
             if (classe === "ai-message" && !texto.startsWith("⚠️") && typeof marked !== "undefined") {
                 conteudoHTML += marked.parse(texto);
             } else {
-                conteudoHTML += texto;
+                conteudoHTML += textoExibicao.replace(/\n/g, '<br>');
             }
 
             div.innerHTML = conteudoHTML;
