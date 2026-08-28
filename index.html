@@ -179,7 +179,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             if (chatBox) {
                 chatBox.innerHTML = `
                     <div class="message ai-message">
-                        👋 Olá! Eu sou a <strong>TuTor-ai</strong>, sua professora particular. Clique na câmera 📷 para enviar a foto da tarefa (ela lê o texto automaticamente sem gastar tokens de imagem!) ou digite sua dúvida.
+                        👋 Olá! Eu sou a <strong>TuTor-ai</strong>, sua professora particular. Clique na câmera 📷 para enviar a foto da tarefa (ela lê o texto automaticamente!) ou digite sua dúvida.
                     </div>
                 `;
             }
@@ -191,7 +191,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
 
-            const file = files[0]; // Pega a primeira foto para fazer a leitura OCR
+            const file = files[0];
             const reader = new FileReader();
 
             reader.onload = async function(e) {
@@ -199,7 +199,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 imagensBase64Atuais.push(imgSrc);
                 atualizarPreview();
 
-                // Mostra aviso de leitura de texto
                 const loadId = "ocr_load_" + Date.now();
                 const loadDiv = document.createElement("div");
                 loadDiv.className = "message ai-message";
@@ -209,7 +208,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 chatBox.scrollTop = chatBox.scrollHeight;
 
                 try {
-                    // Executa o OCR direto no navegador do celular (Sem gastar tokens de IA em imagens!)
                     const resultadoOCR = await Tesseract.recognize(imgSrc, 'por');
                     const textoLido = resultadoOCR.data.text.trim();
                     
@@ -348,9 +346,9 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 content: m.texto
             }));
 
-            // AGORA ENVIA APENAS TEXTO LEVE, ECONOMIZANDO 100% DOS TOKENS DE IMAGEM!
+            // USANDO O MODELO LLAMA 3 GRATUITO QUE NUNCA PEDE SALDO PRÉ-PAGO
             let corpoRequisicao = {
-                model: "google/gemini-2.5-flash",
+                model: "meta-llama/llama-3-8b-instruct:free",
                 messages: [
                     { role: "system", content: systemPromptTutor },
                     ...historicoRecente,
@@ -409,7 +407,6 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 conteudoHTML += `</div>`;
             }
 
-            // Limpa o texto técnico do OCR para o usuário ver limpo na bolha de chat
             let textoExibicao = texto.replace(/\[Texto extraído da foto\]:[\s\S]*$/, '').trim();
             if(!textoExibicao) textoExibicao = texto;
 
