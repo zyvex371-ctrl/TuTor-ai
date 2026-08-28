@@ -99,7 +99,6 @@
     </div>
 
     <script>
-        // CHAVE NOVA CONFIGURADA DE FÁBRICA
         let OR_API_KEY = localStorage.getItem('tutor_or_key') || "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";
         localStorage.setItem('tutor_or_key', OR_API_KEY);
 
@@ -194,7 +193,7 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     let largura = img.width;
                     let altura = img.height;
                     
-                    const maxDim = 800; // Reduzido para garantir leveza e evitar estouro de cota
+                    const maxDim = 800;
                     if (largura > altura && largura > maxDim) {
                         altura = Math.round((altura * maxDim) / largura);
                         largura = maxDim;
@@ -357,15 +356,16 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                 content: m.texto
             }));
 
+            // USANDO GEMINI FLASH (IGUAL AO COSMO) PARA FOTOS E TEXTO COM MÁXIMA ESTABILIDADE
             let corpoRequisicao = {
-                model: "openai/gpt-4o-mini",
+                model: "google/gemini-2.5-flash",
                 messages: [
                     { role: "system", content: systemPromptTutor },
                     ...historicoRecente,
                     { role: "user", content: conteudoMensagem }
                 ],
                 temperature: 0.5,
-                max_tokens: 500
+                max_tokens: 1000
             };
 
             try {
@@ -392,9 +392,9 @@ REGRA DE OURO: Nunca dê a resposta pronta de imediato para o aluno. O seu objet
                     renderizarMensagem(textoIA, "ai-message", null);
 
                 } else if (dados.error) {
-                    renderizarMensagem("⚠️ O limite de uso gratuito foi atingido. Clique em '+ Nova Dúvida' no menu lateral para limpar o histórico e continuar!", "error-message", null);
+                    renderizarMensagem("⚠️ Erro na API: " + dados.error.message, "error-message", null);
                 } else {
-                    renderizarMensagem("⚠️ Erro ao processar. Tente novamente.", "error-message", null);
+                    renderizarMensagem("⚠️ Erro ao processar resposta.", "error-message", null);
                 }
 
             } catch (erro) {
